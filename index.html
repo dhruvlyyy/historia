@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia AI | Groq Powered Edition</title>
+    <title>Historia AI | Netlify Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
@@ -93,7 +93,6 @@
 <body>
 
     <div class="app-container">
-        <!-- Screens are the same, logic is updated -->
         <div id="welcome-screen" class="screen active">
             <h1>Historia AI</h1>
             <p>An AI-powered clinical assistant to help document your medical history accurately and confidentially.</p>
@@ -163,7 +162,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. STATE & CONFIG ---
         let appState = {
             preliminary: {},
             cc: {},
@@ -205,7 +203,6 @@
         3. [Diagnosis 3]
         `;
 
-        // --- 2. CORE FUNCTIONS ---
         const switchScreen = (screenId) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
@@ -225,7 +222,6 @@
             });
         };
 
-        // --- 3. AI CHAT ENGINE (MODIFIED FOR GROQ) ---
         const chatLog = document.getElementById('chat-log');
         const chatInputArea = document.getElementById('chat-input-area');
 
@@ -318,8 +314,9 @@
 
         const callGenerativeApi = async (systemPrompt, conversationHistory, callback) => {
             showChatLoading(true);
-            const apiKey = "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";
-            const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            
+            // *** NETLIFY CHANGE: The API URL now points to our secure function ***
+            const apiUrl = '/.netlify/functions/groq-proxy';
 
             const payload = {
                 messages: [
@@ -327,7 +324,6 @@
                     ...conversationHistory
                 ],
                 model: "openai/gpt-oss-20b",
-                // *** FIX: Add reasoning_effort parameter to guide the model's output ***
                 reasoning_effort: "medium"
             };
 
@@ -335,7 +331,6 @@
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
@@ -350,16 +345,16 @@
                 const choice = result.choices[0];
                 let aiText = null;
 
-                // *** FIX: Handle both direct content and tool_call responses robustly ***
                 if (choice.message && choice.message.content) {
                     aiText = choice.message.content;
                 } else if (choice.message && choice.message.tool_calls && choice.message.tool_calls.length > 0) {
                     try {
                         const toolArgs = JSON.parse(choice.message.tool_calls[0].function.arguments);
-                        if (toolArgs.question && toolArgs.options) {
-                             aiText = `${toolArgs.question} [${toolArgs.options.join('|')}]`;
-                        } else if (toolArgs.question) {
-                            aiText = toolArgs.question;
+                        if (toolArgs.question) {
+                             aiText = toolArgs.question;
+                             if (toolArgs.options) {
+                                aiText += ` [${toolArgs.options.join('|')}]`;
+                             }
                         }
                     } catch (e) {
                          console.error("Failed to parse tool call arguments:", e);
@@ -382,7 +377,6 @@
             }
         };
 
-        // --- 4. SUMMARY GENERATOR ---
         const generateAndDisplaySummary = async () => {
             collectFormData();
             switchScreen('loading-summary-screen');
@@ -423,7 +417,6 @@
             });
         };
 
-        // --- 5. EVENT LISTENERS ---
         document.querySelectorAll('.next-btn').forEach(btn => {
             btn.addEventListener('click', () => switchScreen(btn.dataset.next));
         });
