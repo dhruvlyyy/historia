@@ -315,16 +315,14 @@
         const callGenerativeApi = async (systemPrompt, conversationHistory, callback) => {
             showChatLoading(true);
             
-            // *** NETLIFY CHANGE: The API URL now points to our secure function ***
-           const apiUrl = '/api/groq-proxy';
+            const apiUrl = '/api/groq-proxy';
 
             const payload = {
                 messages: [
                     { role: "system", content: systemPrompt },
                     ...conversationHistory
                 ],
-                model: "openai/gpt-oss-20b",
-                reasoning_effort: "medium"
+                tool_choice: "none"
             };
 
             try {
