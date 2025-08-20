@@ -29,7 +29,6 @@
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; overflow: hidden; padding: 1rem;
         }
-        /* New Animated Background */
         #background-wrap {
             position: fixed;
             top: 0;
@@ -139,7 +138,7 @@
         <div id="welcome-screen" class="screen active">
             <h1>Historia AI</h1>
             <p>An AI-powered clinical assistant to help document your medical history accurately and confidentially.</p>
-            <button class="btn next-btn" data-next="preliminary-data-screen">Begin History Taking</button>
+            <button id="begin-history-btn" class="btn">Begin History Taking</button>
             <div class="creator-credit">Made by Dhruv Mehta</div>
         </div>
 
@@ -228,11 +227,14 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
+        
+        // *** FIX: Initialized appState with all necessary top-level objects ***
         let appState = {
             preliminary: {},
             cc: {},
             hpiConversation: [],
             history: {},
+            social: {}, // This was missing
             labReports: '',
             editingTarget: null
         };
@@ -472,6 +474,11 @@
                 switchScreen('summary-screen');
             });
         };
+
+        // *** FIX: Added a dedicated event listener for the first button ***
+        document.getElementById('begin-history-btn').addEventListener('click', () => {
+            switchScreen('preliminary-data-screen');
+        });
 
         document.querySelectorAll('.next-btn').forEach(btn => {
             btn.addEventListener('click', () => {
