@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia AI | Netlify Edition</title>
+    <title>Historia AI | Professional Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+    <!-- jsPDF Library for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         :root {
@@ -14,7 +16,7 @@
             --text-color: #E5E7EB;
             --bg-color-1: #111827;
             --bg-color-2: #1F2937;
-            --card-bg: rgba(31, 41, 55, 0.85);
+            --card-bg: rgba(17, 24, 39, 0.75);
             --border-color: rgba(107, 114, 128, 0.3);
             --input-bg: rgba(55, 65, 81, 0.5);
         }
@@ -23,16 +25,50 @@
         body {
             font-family: 'Poppins', sans-serif;
             color: var(--text-color);
-            background: linear-gradient(135deg, var(--bg-color-1), var(--bg-color-2));
+            background-color: var(--bg-color-1);
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; overflow: hidden; padding: 1rem;
         }
+        /* New Animated Background */
+        #background-wrap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .bubble {
+            position: absolute;
+            background: var(--primary-color);
+            border-radius: 50%;
+            opacity: 0.2;
+            animation: rise 15s infinite ease-in;
+        }
+        .bubble:nth-child(1) { width: 40px; height: 40px; left: 10%; animation-duration: 8s; }
+        .bubble:nth-child(2) { width: 20px; height: 20px; left: 20%; animation-duration: 5s; animation-delay: 1s; }
+        .bubble:nth-child(3) { width: 50px; height: 50px; left: 35%; animation-duration: 7s; animation-delay: 2s; }
+        .bubble:nth-child(4) { width: 80px; height: 80px; left: 50%; animation-duration: 11s; animation-delay: 0s; }
+        .bubble:nth-child(5) { width: 35px; height: 35px; left: 55%; animation-duration: 6s; animation-delay: 1s; }
+        .bubble:nth-child(6) { width: 45px; height: 45px; left: 65%; animation-duration: 8s; animation-delay: 3s; }
+        .bubble:nth-child(7) { width: 90px; height: 90px; left: 70%; animation-duration: 12s; animation-delay: 2s; }
+        .bubble:nth-child(8) { width: 25px; height: 25px; left: 80%; animation-duration: 6s; animation-delay: 2s; }
+        .bubble:nth-child(9) { width: 15px; height: 15px; left: 70%; animation-duration: 5s; animation-delay: 1s; }
+        .bubble:nth-child(10) { width: 60px; height: 60px; left: 25%; animation-duration: 10s; animation-delay: 4s; }
+        @keyframes rise {
+            0% { bottom: -100px; transform: translateX(0); }
+            50% { transform: translateX(100px); }
+            100% { bottom: 1080px; transform: translateX(-200px); }
+        }
+
         .app-container {
             width: 100%; max-width: 480px; height: 95vh; max-height: 900px;
             background: var(--card-bg); backdrop-filter: blur(20px);
             border: 1px solid var(--border-color); border-radius: 24px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             display: flex; flex-direction: column; overflow: hidden;
+            position: relative; z-index: 1;
         }
         .screen {
             display: none; flex-direction: column; align-items: center;
@@ -51,7 +87,7 @@
             cursor: pointer; transition: all 0.2s ease; width: 100%; max-width: 350px; margin-top: 1rem;
         }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-        .btn:disabled { background-color: #555; cursor: not-allowed; }
+        .btn-secondary { background: var(--bg-color-2); }
 
         .form-container { width: 100%; text-align: left; }
         .form-group { width: 100%; margin-bottom: 1.25rem; }
@@ -60,26 +96,24 @@
             width: 100%; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
             background: var(--input-bg); color: var(--text-color); font-size: 1rem; font-family: 'Poppins', sans-serif;
         }
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
-        .checkbox-label { background: var(--input-bg); padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-
+        .form-group textarea { resize: vertical; min-height: 150px; }
+        
         #hpi-chat-screen { padding: 1rem; justify-content: flex-end; }
         #chat-log { width: 100%; flex-grow: 1; overflow-y: auto; padding: 10px; }
         .chat-message { padding: 12px 18px; border-radius: 20px; margin-bottom: 10px; max-width: 85%; animation: messageFadeIn 0.5s ease-out forwards; }
-        @keyframes messageFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .ai-message { background: var(--bg-color-2); align-self: flex-start; }
         .user-message { background: var(--primary-color); align-self: flex-end; }
-        .loading-indicator { align-self: center; text-align: center; }
-        .loading-indicator p { font-size: 1.2rem; font-weight: 500; }
-        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 1rem auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
         #chat-input-area { padding: 1rem; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .option-btn {
             background: var(--bg-color-2); color: var(--text-color); border: 1px solid var(--primary-color);
             padding: 10px 20px; border-radius: 20px; cursor: pointer; transition: background-color 0.2s ease;
         }
-        .option-btn:hover { background: var(--primary-color); }
+        
+        .review-section { width: 100%; background: var(--bg-color-2); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; text-align: left; }
+        .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .review-header h3 { color: var(--primary-color); }
+        .edit-btn { background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 0.9rem; }
+        .review-content { font-size: 0.95rem; line-height: 1.5; opacity: 0.9; }
 
         .summary-content { 
             width: 100%; height: 100%; overflow-y: auto; font-family: 'Roboto Mono', monospace;
@@ -88,15 +122,25 @@
         }
         .summary-content h3 { color: var(--primary-color); margin-top: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; font-size: 1rem; }
         .summary-content strong { color: #9CA3AF; width: 100px; display: inline-block; }
+        
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 1rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .creator-credit { position: absolute; bottom: 10px; right: 20px; font-size: 0.75rem; opacity: 0.5; }
     </style>
 </head>
 <body>
+    <div id="background-wrap">
+        <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div>
+        <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div> <div class="bubble" style="bottom: -100px;"></div>
+    </div>
 
     <div class="app-container">
         <div id="welcome-screen" class="screen active">
             <h1>Historia AI</h1>
             <p>An AI-powered clinical assistant to help document your medical history accurately and confidentially.</p>
             <button class="btn next-btn" data-next="preliminary-data-screen">Begin History Taking</button>
+            <div class="creator-credit">Made by Dhruv Mehta</div>
         </div>
 
         <div id="preliminary-data-screen" class="screen">
@@ -115,7 +159,7 @@
                 <div class="form-group"><label>What is the main reason for your visit?</label><input type="text" id="cc-symptom" placeholder="e.g., Chest Pain"></div>
                 <div class="form-group"><label>How long have you had this problem?</label><input type="text" id="cc-duration" placeholder="e.g., 3 hours"></div>
             </div>
-            <button id="start-hpi-btn" class="btn">Next: Analyze Complaint with AI</button>
+            <button id="start-hpi-btn" class="btn">Next: Analyze Complaint</button>
         </div>
 
         <div id="hpi-chat-screen" class="screen">
@@ -127,11 +171,13 @@
         <div id="past-medical-history-screen" class="screen">
             <h2>D. Past Medical History</h2>
             <div class="form-container">
-                <label>Please select any major illnesses you have had:</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-label"><input type="checkbox" value="Hypertension"> Hypertension</label>
-                    <label class="checkbox-label"><input type="checkbox" value="Diabetes"> Diabetes</label>
-                    <label class="checkbox-label"><input type="checkbox" value="Asthma/COPD"> Asthma/COPD</label>
+                <div class="form-group">
+                    <label>Please list any past surgeries (e.g., Appendectomy, 2015)</label>
+                    <textarea id="psh-details"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Please list any regular medications (e.g., Metformin 500mg)</label>
+                    <textarea id="meds-details"></textarea>
                 </div>
             </div>
             <button class="btn next-btn" data-next="social-history-screen">Next: Social History</button>
@@ -143,7 +189,23 @@
                 <div class="form-group"><label>Tobacco Use</label><select id="social-tobacco"><option>Never</option><option>Former</option><option>Current</option></select></div>
                 <div class="form-group"><label>Alcohol Use</label><select id="social-alcohol"><option>Never</option><option>Rarely</option><option>Socially</option><option>Regularly</option></select></div>
             </div>
-            <button class="btn" id="generate-summary-btn">Generate Final Summary</button>
+            <button class="btn next-btn" data-next="lab-report-screen">Next: Lab Reports</button>
+        </div>
+
+        <div id="lab-report-screen" class="screen">
+            <h2>Lab Reports</h2>
+            <p>If you have any recent lab reports (like CBC, LFT, etc.), please paste or type the key findings below.</p>
+            <div class="form-container">
+                <textarea id="lab-reports" placeholder="e.g., CBC: Hb 10.5, WBC 12,000, Platelets 150,000..."></textarea>
+            </div>
+            <button class="btn next-btn" data-next="review-screen">Next: Review Information</button>
+        </div>
+
+        <div id="review-screen" class="screen">
+            <h2>Review Your Information</h2>
+            <p>Please check that all information is correct before proceeding.</p>
+            <div id="review-container" class="form-container"></div>
+            <button id="confirm-and-generate-btn" class="btn">Confirm & Generate Summary</button>
         </div>
         
         <div id="loading-summary-screen" class="screen">
@@ -156,18 +218,23 @@
         <div id="summary-screen" class="screen">
             <h2>L. Final Clinical Summary</h2>
             <div class="summary-content" id="summary-output"></div>
-            <button class="btn" onclick="window.location.reload()">Start New Session</button>
+            <div style="display: flex; gap: 1rem; width: 100%; max-width: 350px;">
+                <button class="btn btn-secondary" id="download-pdf-btn">Download PDF</button>
+                <button class="btn" onclick="window.location.reload()">Start New</button>
+            </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const { jsPDF } = window.jspdf;
         let appState = {
             preliminary: {},
             cc: {},
             hpiConversation: [],
-            pmh: [],
-            social: {}
+            history: {},
+            labReports: '',
+            editingTarget: null
         };
         let chatHistory = [];
 
@@ -178,29 +245,31 @@
         4.  Keep your tone empathetic and professional.
         5.  After you have thoroughly covered all aspects of OLD CARTS, end your turn by responding with only the text: [HPI_COMPLETE]`;
 
-        const SUMMARY_PROMPT_TEMPLATE = (data) => `You are a senior medical doctor. Analyze the following patient data and generate a formal clinical summary.
+        const SUMMARY_PROMPT_TEMPLATE = (data) => `You are a Differential Diagnosis Expert AI for a clinical setting in India. Analyze the following comprehensive patient data.
         
-        PATIENT DATA:
-        - Demographics: ${data.preliminary.name}, ${data.preliminary.age}, ${data.preliminary.sex}
-        - Chief Complaint: ${data.cc.symptom} for ${data.cc.duration}
-        - Past Medical History: ${data.pmh.join(', ') || 'None'}
-        - Social History: Tobacco: ${data.social.tobacco}, Alcohol: ${data.social.alcohol}
-        - HPI Conversation Transcript:
+        **PATIENT DATA:**
+        - **Demographics:** ${data.preliminary.name}, ${data.preliminary.age}, ${data.preliminary.sex}
+        - **Chief Complaint:** ${data.cc.symptom} for ${data.cc.duration}
+        - **Past History:** Surgeries: ${data.history.surgeries || 'None'}. Medications: ${data.history.medications || 'None'}.
+        - **Social History:** Tobacco: ${data.social.tobacco}, Alcohol: ${data.social.alcohol}
+        - **Lab Reports:** ${data.labReports || 'Not provided.'}
+        - **HPI Conversation Transcript:**
         ${data.hpiConversation.map(item => `AI: ${item.q}\nPatient: ${item.a}`).join('\n')}
 
-        YOUR TASK:
-        1.  Write a concise, narrative "History of Presenting Illness" paragraph. Synthesize the conversation into a professional clinical note.
-        2.  Based on all available information, list 3-5 "Probable Diagnoses", with the most likely first.
+        **YOUR TASK:**
+        1.  **Synthesize HPI:** Write a concise, narrative "History of Presenting Illness" paragraph in a formal clinical style. Integrate pertinent positives and negatives from the conversation.
+        2.  **Analyze Labs:** Explicitly mention any significant findings from the lab reports and correlate them with the clinical picture.
+        3.  **Provide Differential Diagnosis:** Based on all available information, list 3-5 "Probable Diagnoses", with the most likely first. For each diagnosis, provide a brief (1-2 sentence) justification based on the patient's data.
         
-        FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+        **FORMAT YOUR RESPONSE EXACTLY LIKE THIS:**
         
         History of Presenting Illness:
         [Your summary paragraph here]
         
         Probable Diagnoses:
-        1. [Diagnosis 1]
-        2. [Diagnosis 2]
-        3. [Diagnosis 3]
+        1. **[Diagnosis 1]:** [Your brief justification here]
+        2. **[Diagnosis 2]:** [Your brief justification here]
+        3. **[Diagnosis 3]:** [Your brief justification here]
         `;
 
         const switchScreen = (screenId) => {
@@ -214,12 +283,11 @@
             appState.preliminary.sex = document.getElementById('sex').value;
             appState.cc.symptom = document.getElementById('cc-symptom').value;
             appState.cc.duration = document.getElementById('cc-duration').value;
+            appState.history.surgeries = document.getElementById('psh-details').value;
+            appState.history.medications = document.getElementById('meds-details').value;
             appState.social.tobacco = document.getElementById('social-tobacco').value;
             appState.social.alcohol = document.getElementById('social-alcohol').value;
-            appState.pmh = [];
-            document.querySelectorAll('#past-medical-history-screen input:checked').forEach(checkbox => {
-                appState.pmh.push(checkbox.value);
-            });
+            appState.labReports = document.getElementById('lab-reports').value;
         };
 
         const chatLog = document.getElementById('chat-log');
@@ -249,36 +317,21 @@
         };
 
         const processAiResponse = (text) => {
-            if (typeof text !== 'string') {
-                console.error("AI response is not a string:", text);
-                addMessage('ai', "I received an unexpected response from the AI. Let's try that again.");
-                chatHistory.pop(); 
-                const lastUserMessage = chatHistory.pop(); 
-                if(lastUserMessage) {
-                    sendUserResponse(lastUserMessage.content);
-                }
-                return;
-            }
-
             if (text.trim() === '[HPI_COMPLETE]') {
-                addMessage('ai', "Thank you. We've completed the detailed analysis of your main complaint.");
+                addMessage('ai', "Thank you. We've completed the detailed analysis.");
                 setTimeout(() => switchScreen('past-medical-history-screen'), 2000);
                 return;
             }
-
             const optionRegex = /\[(.*?)\]/;
             const match = text.match(optionRegex);
             let question = text;
             let options = [];
-
             if (match) {
                 question = text.replace(optionRegex, '').trim();
                 options = match[1].split('|').map(opt => opt.trim());
             }
-
             addMessage('ai', question);
             chatHistory.push({ role: "assistant", content: question });
-
             chatInputArea.innerHTML = '';
             if (options.length > 0) {
                 options.forEach(opt => {
@@ -292,7 +345,7 @@
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.placeholder = 'Type your answer...';
-                input.style.cssText = 'width: 70%; padding: 10px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);';
+                input.style.cssText = 'width: 70%; padding: 10px; border-radius: 20px;';
                 const sendBtn = document.createElement('button');
                 sendBtn.textContent = 'Send';
                 sendBtn.className = 'option-btn';
@@ -314,100 +367,105 @@
 
         const callGenerativeApi = async (systemPrompt, conversationHistory, callback) => {
             showChatLoading(true);
-            
             const apiUrl = '/api/groq-proxy';
-
             const payload = {
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    ...conversationHistory
-                ],
+                messages: [ { role: "system", content: systemPrompt }, ...conversationHistory ],
                 tool_choice: "none"
             };
-
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (!response.ok) {
                     const errorBody = await response.text();
-                    throw new Error(`API error: ${response.status} ${response.statusText}. Details: ${errorBody}`);
+                    throw new Error(`API error: ${response.status}. Details: ${errorBody}`);
                 }
-                
                 const result = await response.json();
                 const choice = result.choices[0];
                 let aiText = null;
-
                 if (choice.message && choice.message.content) {
                     aiText = choice.message.content;
-                } else if (choice.message && choice.message.tool_calls && choice.message.tool_calls.length > 0) {
-                    try {
-                        const toolArgs = JSON.parse(choice.message.tool_calls[0].function.arguments);
-                        if (toolArgs.question) {
-                             aiText = toolArgs.question;
-                             if (toolArgs.options) {
-                                aiText += ` [${toolArgs.options.join('|')}]`;
-                             }
-                        }
-                    } catch (e) {
-                         console.error("Failed to parse tool call arguments:", e);
-                         throw new Error("Failed to parse tool call from AI.");
-                    }
+                } else if (choice.message && choice.message.tool_calls) {
+                    const toolArgs = JSON.parse(choice.message.tool_calls[0].function.arguments);
+                    aiText = toolArgs.question;
+                    if (toolArgs.options) aiText += ` [${toolArgs.options.join('|')}]`;
                 }
-
-                if (aiText === null) {
-                    console.error("Invalid or empty response structure from AI:", result);
-                    throw new Error("Invalid response structure from AI. Model did not return content or a valid tool_call.");
-                }
-
+                if (aiText === null) throw new Error("Invalid response structure from AI.");
                 callback(aiText);
-
             } catch (error) {
                 console.error("Error calling AI model:", error);
-                addMessage('ai', "I'm having trouble connecting to the AI. This could be due to an invalid API key or a network issue. Please check the console (F12) for more details.");
+                addMessage('ai', "Error connecting to AI. Please check console for details.");
             } finally {
                 showChatLoading(false);
             }
         };
 
-        const generateAndDisplaySummary = async () => {
+        const populateReviewScreen = () => {
             collectFormData();
+            const container = document.getElementById('review-container');
+            container.innerHTML = `
+                <div class="review-section">
+                    <div class="review-header"><h3>Preliminary Data</h3><button class="edit-btn" data-screen="preliminary-data-screen">Edit</button></div>
+                    <div class="review-content">
+                        Name: ${appState.preliminary.name || 'N/A'}<br>
+                        Age: ${appState.preliminary.age || 'N/A'}<br>
+                        Sex: ${appState.preliminary.sex || 'N/A'}
+                    </div>
+                </div>
+                <div class="review-section">
+                    <div class="review-header"><h3>Chief Complaint</h3><button class="edit-btn" data-screen="chief-complaint-screen">Edit</button></div>
+                    <div class="review-content">${appState.cc.symptom || 'N/A'} for ${appState.cc.duration || 'N/A'}</div>
+                </div>
+                 <div class="review-section">
+                    <div class="review-header"><h3>Past History</h3><button class="edit-btn" data-screen="past-medical-history-screen">Edit</button></div>
+                    <div class="review-content">
+                        Surgeries: ${appState.history.surgeries || 'None'}<br>
+                        Medications: ${appState.history.medications || 'None'}
+                    </div>
+                </div>
+                <div class="review-section">
+                    <div class="review-header"><h3>Social History</h3><button class="edit-btn" data-screen="social-history-screen">Edit</button></div>
+                    <div class="review-content">
+                        Tobacco: ${appState.social.tobacco || 'N/A'}<br>
+                        Alcohol: ${appState.social.alcohol || 'N/A'}
+                    </div>
+                </div>
+                <div class="review-section">
+                    <div class="review-header"><h3>Lab Reports</h3><button class="edit-btn" data-screen="lab-report-screen">Edit</button></div>
+                    <div class="review-content">${appState.labReports || 'None'}</div>
+                </div>
+            `;
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    appState.editingTarget = 'review-screen';
+                    switchScreen(e.target.dataset.screen);
+                };
+            });
+        };
+        
+        const generateAndDisplaySummary = async () => {
             switchScreen('loading-summary-screen');
-            
             const summaryPrompt = SUMMARY_PROMPT_TEMPLATE(appState);
-            
             await callGenerativeApi(summaryPrompt, [], (summaryText) => {
                 const summaryOutput = document.getElementById('summary-output');
-                
                 const hpiMatch = summaryText.match(/History of Presenting Illness:\s*([\s\S]*?)\s*Probable Diagnoses:/);
                 const dxMatch = summaryText.match(/Probable Diagnoses:\s*([\s\S]*)/);
-
                 const hpiSummary = hpiMatch ? hpiMatch[1].trim() : "Could not generate HPI summary.";
                 const diagnoses = dxMatch ? dxMatch[1].trim() : "Could not generate diagnoses.";
-
                 summaryOutput.innerHTML = `
 <h3>A. Preliminary Data</h3>
 <strong>Name:</strong> <span>${appState.preliminary.name || 'N/A'}</span>
 <strong>Age/Sex:</strong> <span>${appState.preliminary.age || 'N/A'} / ${appState.preliminary.sex || 'N/A'}</span>
-
 <h3>B. Chief Complaint</h3>
 <span>${appState.cc.symptom || 'N/A'} for ${appState.cc.duration || 'N/A'}</span>
-
 <h3>C. History of Presenting Illness</h3>
 <p style="font-family: 'Poppins', sans-serif;">${hpiSummary}</p>
-
-<h3>D. Past Medical History</h3>
-<span>${appState.pmh.join(', ') || 'None reported'}</span>
-
-<h3>I. Social History</h3>
-<strong>Tobacco:</strong> <span>${appState.social.tobacco || 'N/A'}</span>
-<strong>Alcohol:</strong> <span>${appState.social.alcohol || 'N/A'}</span>
-
+<h3>D. Past & Social History</h3>
+<span>Surgeries: ${appState.history.surgeries || 'None'}<br>Medications: ${appState.history.medications || 'None'}<br>Tobacco: ${appState.social.tobacco}<br>Alcohol: ${appState.social.alcohol}</span>
+<h3>Lab Findings</h3>
+<pre>${appState.labReports || 'None provided.'}</pre>
 <h3>AI-Suggested Probable Diagnoses</h3>
 <pre>${diagnoses}</pre>
                 `;
@@ -416,7 +474,17 @@
         };
 
         document.querySelectorAll('.next-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchScreen(btn.dataset.next));
+            btn.addEventListener('click', () => {
+                collectFormData();
+                if (appState.editingTarget) {
+                    const target = appState.editingTarget;
+                    appState.editingTarget = null;
+                    populateReviewScreen();
+                    switchScreen(target);
+                } else {
+                    switchScreen(btn.dataset.next);
+                }
+            });
         });
 
         document.getElementById('start-hpi-btn').addEventListener('click', () => {
@@ -427,7 +495,21 @@
             callGenerativeApi(INTERVIEW_PROMPT, chatHistory, processAiResponse);
         });
 
-        document.getElementById('generate-summary-btn').addEventListener('click', generateAndDisplaySummary);
+        document.getElementById('review-screen').addEventListener('focusin', populateReviewScreen);
+        document.getElementById('confirm-and-generate-btn').addEventListener('click', generateAndDisplaySummary);
+
+        document.getElementById('download-pdf-btn').addEventListener('click', () => {
+            const pdf = new jsPDF();
+            const summaryElement = document.getElementById('summary-output');
+            const text = summaryElement.innerText;
+            
+            pdf.setFont('courier');
+            pdf.setFontSize(10);
+            
+            const lines = pdf.splitTextToSize(text, 180);
+            pdf.text(lines, 15, 15);
+            pdf.save(`Historia_AI_Summary_${appState.preliminary.name}.pdf`);
+        });
     });
     </script>
 </body>
