@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia AI | Professional Edition</title>
+    <title>Historia AI | OCR Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
     <!-- jsPDF Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Tesseract.js Library for OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
         :root {
@@ -126,6 +128,12 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         
         .creator-credit { position: absolute; bottom: 10px; right: 20px; font-size: 0.75rem; opacity: 0.5; }
+
+        /* Styles for new OCR feature */
+        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .upload-btn { border: 2px solid var(--primary-color); color: var(--primary-color); background-color: transparent; padding: 8px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; width: 100%; }
+        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; }
+        #ocr-status { margin-top: 1rem; font-style: italic; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -193,8 +201,13 @@
 
         <div id="lab-report-screen" class="screen">
             <h2>Lab Reports</h2>
-            <p>If you have any recent lab reports (like CBC, LFT, etc.), please paste or type the key findings below.</p>
+            <p>Type your key lab findings below, or upload an image of your report to extract the text automatically.</p>
             <div class="form-container">
+                <div class="upload-btn-wrapper">
+                    <button class="btn upload-btn">Upload Report Image</button>
+                    <input type="file" id="report-upload" accept="image/*" />
+                </div>
+                <div id="ocr-status"></div>
                 <textarea id="lab-reports" placeholder="e.g., CBC: Hb 10.5, WBC 12,000, Platelets 150,000..."></textarea>
             </div>
             <button class="btn next-btn" data-next="review-screen">Next: Review Information</button>
@@ -228,13 +241,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
         
-        // *** FIX: Initialized appState with all necessary top-level objects ***
         let appState = {
             preliminary: {},
             cc: {},
             hpiConversation: [],
             history: {},
-            social: {}, // This was missing
+            social: {},
             labReports: '',
             editingTarget: null
         };
@@ -475,7 +487,6 @@
             });
         };
 
-        // *** FIX: Added a dedicated event listener for the first button ***
         document.getElementById('begin-history-btn').addEventListener('click', () => {
             switchScreen('preliminary-data-screen');
         });
@@ -517,6 +528,35 @@
             pdf.text(lines, 15, 15);
             pdf.save(`Historia_AI_Summary_${appState.preliminary.name}.pdf`);
         });
+
+        // --- New OCR Functionality ---
+        const reportUploadInput = document.getElementById('report-upload');
+        const ocrStatus = document.getElementById('ocr-status');
+        const labReportsTextarea = document.getElementById('lab-reports');
+
+        reportUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            ocrStatus.textContent = 'Reading report... this may take a moment.';
+            
+            Tesseract.recognize(
+                file,
+                'eng', // Language is English
+                { 
+                    logger: m => console.log(m) // Logs progress to the console
+                }
+            ).then(({ data: { text } }) => {
+                labReportsTextarea.value = text;
+                ocrStatus.textContent = 'Text extracted successfully!';
+            }).catch(err => {
+                console.error(err);
+                ocrStatus.textContent = 'Error reading image. Please try again.';
+            });
+        });
+
     });
     </script>
 </body>
