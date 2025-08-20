@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia AI | OCR Edition</title>
+    <title>Historia AI | Professional Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
     <!-- jsPDF Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Tesseract.js Library for OCR -->
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
         :root {
@@ -21,6 +19,7 @@
             --card-bg: rgba(17, 24, 39, 0.75);
             --border-color: rgba(107, 114, 128, 0.3);
             --input-bg: rgba(55, 65, 81, 0.5);
+            --danger-color: #EF4444;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
@@ -96,6 +95,11 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
             background: var(--input-bg); color: var(--text-color); font-size: 1rem; font-family: 'Poppins', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+        /* New style for invalid fields */
+        .form-group input.invalid, .form-group textarea.invalid {
+            border-color: var(--danger-color);
         }
         .form-group textarea { resize: vertical; min-height: 150px; }
         
@@ -128,12 +132,6 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         
         .creator-credit { position: absolute; bottom: 10px; right: 20px; font-size: 0.75rem; opacity: 0.5; }
-
-        /* Styles for new OCR feature */
-        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
-        .upload-btn { border: 2px solid var(--primary-color); color: var(--primary-color); background-color: transparent; padding: 8px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; width: 100%; }
-        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; }
-        #ocr-status { margin-top: 1rem; font-style: italic; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -153,8 +151,8 @@
         <div id="preliminary-data-screen" class="screen">
             <h2>A. Preliminary Data</h2>
             <div class="form-container">
-                <div class="form-group"><label for="name">Name</label><input type="text" id="name"></div>
-                <div class="form-group"><label for="age">Age</label><input type="number" id="age"></div>
+                <div class="form-group"><label for="name">Name</label><input type="text" id="name" data-required="true"></div>
+                <div class="form-group"><label for="age">Age</label><input type="number" id="age" data-required="true"></div>
                 <div class="form-group"><label for="sex">Sex</label><select id="sex"><option>Male</option><option>Female</option><option>Other</option></select></div>
             </div>
             <button class="btn next-btn" data-next="chief-complaint-screen">Next: Chief Complaint</button>
@@ -163,8 +161,8 @@
         <div id="chief-complaint-screen" class="screen">
             <h2>B. Chief Complaint</h2>
             <div class="form-container">
-                <div class="form-group"><label>What is the main reason for your visit?</label><input type="text" id="cc-symptom" placeholder="e.g., Chest Pain"></div>
-                <div class="form-group"><label>How long have you had this problem?</label><input type="text" id="cc-duration" placeholder="e.g., 3 hours"></div>
+                <div class="form-group"><label>What is the main reason for your visit?</label><input type="text" id="cc-symptom" placeholder="e.g., Chest Pain" data-required="true"></div>
+                <div class="form-group"><label>How long have you had this problem?</label><input type="text" id="cc-duration" placeholder="e.g., 3 hours" data-required="true"></div>
             </div>
             <button id="start-hpi-btn" class="btn">Next: Analyze Complaint</button>
         </div>
@@ -201,13 +199,8 @@
 
         <div id="lab-report-screen" class="screen">
             <h2>Lab Reports</h2>
-            <p>Type your key lab findings below, or upload an image of your report to extract the text automatically.</p>
+            <p>If you have any recent lab reports, please paste or type the key findings below.</p>
             <div class="form-container">
-                <div class="upload-btn-wrapper">
-                    <button class="btn upload-btn">Upload Report Image</button>
-                    <input type="file" id="report-upload" accept="image/*" />
-                </div>
-                <div id="ocr-status"></div>
                 <textarea id="lab-reports" placeholder="e.g., CBC: Hb 10.5, WBC 12,000, Platelets 150,000..."></textarea>
             </div>
             <button class="btn next-btn" data-next="review-screen">Next: Review Information</button>
@@ -302,6 +295,24 @@
             appState.social.tobacco = document.getElementById('social-tobacco').value;
             appState.social.alcohol = document.getElementById('social-alcohol').value;
             appState.labReports = document.getElementById('lab-reports').value;
+        };
+        
+        // *** NEW: Function to validate required fields on a screen ***
+        const validateScreen = (screenId) => {
+            const screen = document.getElementById(screenId);
+            const requiredInputs = screen.querySelectorAll('[data-required="true"]');
+            let isValid = true;
+            
+            requiredInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('invalid');
+                }
+            });
+            
+            return isValid;
         };
 
         const chatLog = document.getElementById('chat-log');
@@ -416,6 +427,31 @@
             }
         };
 
+        const populateFormForEdit = (screenId) => {
+            switch (screenId) {
+                case 'preliminary-data-screen':
+                    document.getElementById('name').value = appState.preliminary.name || '';
+                    document.getElementById('age').value = appState.preliminary.age || '';
+                    document.getElementById('sex').value = appState.preliminary.sex || 'Male';
+                    break;
+                case 'chief-complaint-screen':
+                    document.getElementById('cc-symptom').value = appState.cc.symptom || '';
+                    document.getElementById('cc-duration').value = appState.cc.duration || '';
+                    break;
+                case 'past-medical-history-screen':
+                    document.getElementById('psh-details').value = appState.history.surgeries || '';
+                    document.getElementById('meds-details').value = appState.history.medications || '';
+                    break;
+                case 'social-history-screen':
+                    document.getElementById('social-tobacco').value = appState.social.tobacco || 'Never';
+                    document.getElementById('social-alcohol').value = appState.social.alcohol || 'Never';
+                    break;
+                case 'lab-report-screen':
+                    document.getElementById('lab-reports').value = appState.labReports || '';
+                    break;
+            }
+        };
+
         const populateReviewScreen = () => {
             collectFormData();
             const container = document.getElementById('review-container');
@@ -453,8 +489,10 @@
             `;
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.onclick = (e) => {
+                    const screenId = e.target.dataset.screen;
                     appState.editingTarget = 'review-screen';
-                    switchScreen(e.target.dataset.screen);
+                    populateFormForEdit(screenId);
+                    switchScreen(screenId);
                 };
             });
         };
@@ -492,7 +530,12 @@
         });
 
         document.querySelectorAll('.next-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                const currentScreen = e.target.closest('.screen').id;
+                if (!validateScreen(currentScreen)) {
+                    return; // Stop if validation fails
+                }
+                
                 collectFormData();
                 if (appState.editingTarget) {
                     const target = appState.editingTarget;
@@ -506,6 +549,9 @@
         });
 
         document.getElementById('start-hpi-btn').addEventListener('click', () => {
+            if (!validateScreen('chief-complaint-screen')) {
+                return; // Stop if validation fails
+            }
             collectFormData();
             switchScreen('hpi-chat-screen');
             const initialPrompt = `Start of consultation. Patient: ${appState.preliminary.name}, ${appState.preliminary.age}. Chief Complaint: ${appState.cc.symptom} for ${appState.cc.duration}.`;
@@ -527,34 +573,6 @@
             const lines = pdf.splitTextToSize(text, 180);
             pdf.text(lines, 15, 15);
             pdf.save(`Historia_AI_Summary_${appState.preliminary.name}.pdf`);
-        });
-
-        // --- New OCR Functionality ---
-        const reportUploadInput = document.getElementById('report-upload');
-        const ocrStatus = document.getElementById('ocr-status');
-        const labReportsTextarea = document.getElementById('lab-reports');
-
-        reportUploadInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) {
-                return;
-            }
-
-            ocrStatus.textContent = 'Reading report... this may take a moment.';
-            
-            Tesseract.recognize(
-                file,
-                'eng', // Language is English
-                { 
-                    logger: m => console.log(m) // Logs progress to the console
-                }
-            ).then(({ data: { text } }) => {
-                labReportsTextarea.value = text;
-                ocrStatus.textContent = 'Text extracted successfully!';
-            }).catch(err => {
-                console.error(err);
-                ocrStatus.textContent = 'Error reading image. Please try again.';
-            });
         });
 
     });
