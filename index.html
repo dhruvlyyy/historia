@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
     <!-- jsPDF Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Tesseract.js Library for OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
         :root {
@@ -97,7 +99,6 @@
             background: var(--input-bg); color: var(--text-color); font-size: 1rem; font-family: 'Poppins', sans-serif;
             transition: border-color 0.3s ease;
         }
-        /* New style for invalid fields */
         .form-group input.invalid, .form-group textarea.invalid {
             border-color: var(--danger-color);
         }
@@ -132,6 +133,11 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         
         .creator-credit { position: absolute; bottom: 10px; right: 20px; font-size: 0.75rem; opacity: 0.5; }
+
+        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; margin-bottom: 1rem; }
+        .upload-btn { border: 2px solid var(--primary-color); color: var(--primary-color); background-color: transparent; padding: 8px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; width: 100%; }
+        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; }
+        #ocr-status { margin-top: 1rem; font-style: italic; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -199,8 +205,13 @@
 
         <div id="lab-report-screen" class="screen">
             <h2>Lab Reports</h2>
-            <p>If you have any recent lab reports, please paste or type the key findings below.</p>
+            <p>Type your key lab findings below, or upload an image of your report to extract the text automatically.</p>
             <div class="form-container">
+                <div class="upload-btn-wrapper">
+                    <button class="btn upload-btn">Upload Report Image</button>
+                    <input type="file" id="report-upload" accept="image/*" />
+                </div>
+                <div id="ocr-status"></div>
                 <textarea id="lab-reports" placeholder="e.g., CBC: Hb 10.5, WBC 12,000, Platelets 150,000..."></textarea>
             </div>
             <button class="btn next-btn" data-next="review-screen">Next: Review Information</button>
@@ -297,7 +308,6 @@
             appState.labReports = document.getElementById('lab-reports').value;
         };
         
-        // *** NEW: Function to validate required fields on a screen ***
         const validateScreen = (screenId) => {
             const screen = document.getElementById(screenId);
             const requiredInputs = screen.querySelectorAll('[data-required="true"]');
@@ -533,7 +543,7 @@
             btn.addEventListener('click', (e) => {
                 const currentScreen = e.target.closest('.screen').id;
                 if (!validateScreen(currentScreen)) {
-                    return; // Stop if validation fails
+                    return;
                 }
                 
                 collectFormData();
@@ -550,7 +560,7 @@
 
         document.getElementById('start-hpi-btn').addEventListener('click', () => {
             if (!validateScreen('chief-complaint-screen')) {
-                return; // Stop if validation fails
+                return;
             }
             collectFormData();
             switchScreen('hpi-chat-screen');
@@ -573,6 +583,33 @@
             const lines = pdf.splitTextToSize(text, 180);
             pdf.text(lines, 15, 15);
             pdf.save(`Historia_AI_Summary_${appState.preliminary.name}.pdf`);
+        });
+
+        const reportUploadInput = document.getElementById('report-upload');
+        const ocrStatus = document.getElementById('ocr-status');
+        const labReportsTextarea = document.getElementById('lab-reports');
+
+        reportUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            ocrStatus.textContent = 'Reading report... this may take a moment.';
+            
+            Tesseract.recognize(
+                file,
+                'eng',
+                { 
+                    logger: m => console.log(m)
+                }
+            ).then(({ data: { text } }) => {
+                labReportsTextarea.value = text;
+                ocrStatus.textContent = 'Text extracted successfully!';
+            }).catch(err => {
+                console.error(err);
+                ocrStatus.textContent = 'Error reading image. Please try again.';
+            });
         });
 
     });
