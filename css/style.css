@@ -38,12 +38,19 @@ body {
 }
 
 .app-container {
-    width: 100%; max-width: 800px; height: 95vh; max-height: 900px;
+    width: 100%; max-width: 800px; height: auto; min-height: 85vh; max-height: 95vh;
     background: var(--card-bg); backdrop-filter: blur(20px);
     border: 1px solid var(--border-color); border-radius: 24px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     display: flex; flex-direction: column; overflow: hidden;
     position: relative; z-index: 1; transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        height: 100vh; max-height: none; border-radius: 0; border: none;
+        min-height: 100vh;
+    }
 }
 .screen {
     display: none; flex-direction: column; align-items: center;
