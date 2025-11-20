@@ -16,6 +16,7 @@ body {
     background-color: var(--bg-color-1);
     display: flex; justify-content: center; align-items: center;
     min-height: 100vh; overflow: hidden; padding: 1rem;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
 #background-wrap {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -47,9 +48,16 @@ body {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 0; /* Remove body padding on mobile */
+    }
     .app-container {
-        height: 100vh; max-height: none; border-radius: 0; border: none;
+        height: 100vh;
+        max-height: 100vh; /* Ensure it doesn't exceed viewport */
+        border-radius: 0;
+        border: none;
         min-height: 100vh;
+        width: 100%;
     }
 }
 .screen {
@@ -60,13 +68,26 @@ body {
 .screen.active { display: flex; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-h1, h2 { margin-bottom: 1rem; color: #fff; }
-p { font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem; opacity: 0.9; }
+h1, h2 {
+    margin-bottom: 1rem;
+    color: #fff;
+}
+h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
+h2 { font-size: clamp(1.4rem, 4vw, 1.8rem); }
+
+p {
+    font-size: clamp(0.95rem, 2vw, 1rem);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
 
 .btn {
     background: var(--primary-color); color: #fff; border: none;
     padding: 1rem 2rem; border-radius: 50px; font-size: 1rem; font-weight: 600;
     cursor: pointer; transition: all 0.2s ease; width: 100%; max-width: 350px; margin-top: 1rem;
+    min-height: 48px; /* Ensure minimum touch target size */
+    display: flex; align-items: center; justify-content: center;
 }
 .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
 .btn-secondary { background: var(--bg-color-2); }
@@ -76,8 +97,10 @@ p { font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem; opacity: 0.9; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
 .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
-    background: var(--input-bg); color: var(--text-color); font-size: 1rem; font-family: 'Poppins', sans-serif;
+    background: var(--input-bg); color: var(--text-color); font-size: 16px; /* Prevent zoom on iOS */
+    font-family: 'Poppins', sans-serif;
     transition: border-color 0.3s ease;
+    min-height: 48px; /* Touch target size */
 }
 .form-group input.invalid, .form-group textarea.invalid {
     border-color: var(--danger-color);
@@ -92,14 +115,16 @@ p { font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem; opacity: 0.9; }
 #chat-input-area { padding: 1rem; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
 .option-btn {
     background: var(--bg-color-2); color: var(--text-color); border: 1px solid var(--primary-color);
-    padding: 10px 20px; border-radius: 20px; cursor: pointer; transition: background-color 0.2s ease;
+    padding: 12px 20px; border-radius: 24px; cursor: pointer; transition: background-color 0.2s ease;
+    min-height: 48px; /* Touch target size */
+    font-size: 1rem;
 }
 .option-btn.selected { background: var(--primary-color); color: #fff; }
 .mic-btn {
-    width: 40px; height: 40px; border-radius: 50%; border: none;
+    width: 48px; height: 48px; border-radius: 50%; border: none; /* Increased to 48px */
     background: var(--bg-color-2); color: var(--primary-color);
     display: flex; justify-content: center; align-items: center;
-    cursor: pointer; font-size: 1.2rem; transition: all 0.2s;
+    cursor: pointer; font-size: 1.4rem; transition: all 0.2s;
 }
 .mic-btn.listening { background: var(--danger-color); color: white; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
@@ -151,7 +176,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-radius: 16px; padding: 2rem; max-width: 500px; width: 100%;
     text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-height: 90vh; overflow-y: auto; /* Scroll if modal is too tall */
+}
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 1.5rem;
+        width: 95%;
+    }
 }
 @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal-content h2 { color: var(--danger-color); margin-bottom: 1rem; }
-.modal-content p { margin-bottom: 1rem; font-size: 0.95rem; }
+.modal-content p { margin-bottom: 1rem; font-size: clamp(0.9rem, 3vw, 0.95rem); }
