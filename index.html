@@ -14,21 +14,6 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="disclaimer-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>⚠️ Medical Disclaimer</h2>
-            <p><strong>This application uses Artificial Intelligence to generate clinical summaries and suggestions.</strong></p>
-            <p>The content provided by Historia AI is for <strong>informational and educational purposes only</strong>. It is NOT a substitute for professional medical advice, diagnosis, or treatment.</p>
-            <p>By proceeding, you acknowledge that:</p>
-            <ul style="text-align: left; margin-bottom: 1.5rem; padding-left: 1.5rem; opacity: 0.9;">
-                <li>This tool may make mistakes or "hallucinate" information.</li>
-                <li>You will not use this for final diagnosis or treatment decisions.</li>
-                <li>You are responsible for verifying all information with a qualified healthcare professional.</li>
-            </ul>
-            <button id="accept-disclaimer-btn" class="btn">I Understand & Agree</button>
-        </div>
-    </div>
-
     <div id="background-wrap">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
@@ -36,7 +21,7 @@
     </div>
 
     <div class="app-container">
-        <div id="voice-mode-toggle-container" style="position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; align-items: center; gap: 8px;">
+        <div id="voice-mode-toggle-container">
             <span style="font-size: 0.8rem; opacity: 0.8;">Voice Mode</span>
             <label class="switch">
                 <input type="checkbox" id="voice-mode-toggle">
@@ -135,6 +120,21 @@
                 <button class="btn btn-secondary" id="download-pdf-btn">Download PDF</button>
                 <button class="btn" id="start-new-btn">Start New</button>
             </div>
+        </div>
+    </div>
+
+    <div id="disclaimer-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>⚠️ Medical Disclaimer</h2>
+            <p><strong>This application uses Artificial Intelligence to generate clinical summaries and suggestions.</strong></p>
+            <p>The content provided by Historia AI is for <strong>informational and educational purposes only</strong>. It is NOT a substitute for professional medical advice, diagnosis, or treatment.</p>
+            <p>By proceeding, you acknowledge that:</p>
+            <ul style="text-align: left; margin-bottom: 1.5rem; padding-left: 1.5rem; opacity: 0.9;">
+                <li>This tool may make mistakes or "hallucinate" information.</li>
+                <li>You will not use this for final diagnosis or treatment decisions.</li>
+                <li>You are responsible for verifying all information with a qualified healthcare professional.</li>
+            </ul>
+            <button id="accept-disclaimer-btn" class="btn">I Understand & Agree</button>
         </div>
     </div>
 

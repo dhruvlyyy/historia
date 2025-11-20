@@ -642,4 +642,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // --- Mobile Optimization Helpers ---
+
+    // Ensure chat scrolls to bottom on window resize (e.g., keyboard open)
+    window.addEventListener('resize', () => {
+        if (document.getElementById('hpi-chat-screen').classList.contains('active')) {
+             const chatLog = document.getElementById('chat-log');
+             // Small delay to ensure layout update is finished
+             setTimeout(() => {
+                chatLog.scrollTop = chatLog.scrollHeight;
+             }, 100);
+        }
+    });
+
+    // Ensure active inputs are visible on mobile when keyboard opens
+    const inputs = document.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            // On mobile, wait for keyboard to likely appear then scroll
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 300);
+            }
+        });
+    });
+
 });
